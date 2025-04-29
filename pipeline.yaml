@@ -10,12 +10,13 @@ variables:
   buildConfiguration: 'Release'
   solution1: 'eShop.sln'
   solution2: 'eShop.Web.sln'
+  nugetRestoreKey: 'nuget | "$(Agent.OS)" | $(Build.SourcesDirectory)/**/*.csproj'
 
 steps:
 # Checkout code
 - checkout: self
 
-# Use latest .NET SDK
+# Use the latest .NET SDK
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
@@ -25,7 +26,7 @@ steps:
 # Cache NuGet dependencies to speed up builds
 - task: Cache@2
   inputs:
-    key: 'nuget | "$(Agent.OS)" | $(Build.SourcesDirectory)/**/*.csproj'
+    key: $(nugetRestoreKey)
     restoreKeys: |
       nuget | "$(Agent.OS)"
     path: $(NuGetPackageRoot)
