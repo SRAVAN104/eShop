@@ -10,23 +10,32 @@ variables:
   buildConfiguration: 'Release'
   solution1: 'eShop.sln'
   solution2: 'eShop.Web.sln'
-  nugetRestoreKey: 'nuget | "$(Agent.OS)" | $(Build.SourcesDirectory)/**/*.csproj'
 
 steps:
 # Checkout code
 - checkout: self
 
-# Use the latest .NET SDK
+# Use latest .NET SDK
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
     version: '9.0.x'
     includePreviewVersions: true
 
+# Install required .NET workloads
+- task: Bash@3
+  displayName: 'Install .NET Workloads'
+  inputs:
+    targetType: 'inline'
+    script: |
+      #!/bin/bash
+      echo "Restoring required .NET workloads..."
+      dotnet workload restore
+
 # Cache NuGet dependencies to speed up builds
 - task: Cache@2
   inputs:
-    key: $(nugetRestoreKey)
+    key: 'nuget | "$(Agent.OS)" | $(Build.SourcesDirectory)/**/*.csproj'
     restoreKeys: |
       nuget | "$(Agent.OS)"
     path: $(NuGetPackageRoot)
