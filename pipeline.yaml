@@ -1,0 +1,89 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  solution1: 'eShop.sln'
+  solution2: 'eShop.Web.sln'
+
+steps:
+# Checkout code
+- checkout: self
+
+# Use latest .NET SDK
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '9.x.x'
+    includePreviewVersions: true
+
+# Restore both solutions
+- task: DotNetCoreCLI@2
+  displayName: 'Restore eShop.sln'
+  inputs:
+    command: restore
+    projects: '$(solution1)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore eShop.Tests.sln'
+  inputs:
+    command: restore
+    projects: '$(solution2)'
+
+# Build both solutions
+- task: DotNetCoreCLI@2
+  displayName: 'Build eShop.sln'
+  inputs:
+    command: build
+    projects: '$(solution1)'
+    arguments: '--configuration $(buildConfiguration) --no-restore'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build eShop.Web.sln'
+  inputs:
+    command: build
+    projects: '$(solution2)'
+    arguments: '--configuration $(buildConfiguration) --no-restore'
+
+# ✅ Build all API projects (explicitly)
+- task: DotNetCoreCLI@2
+  displayName: 'Build API Projects'
+  inputs:
+    command: build
+    projects: |
+      src/Basket.API/Basket.API.csproj
+      src/Catalog.API/Catalog.API.csproj
+      src/Identity.API/Identity.API.csproj
+      src/Ordering.API/Ordering.API.csproj
+      src/Webhooks.API/Webhooks.API.csproj
+    arguments: '--configuration $(buildConfiguration) --no-restore'
+
+# ✅ Run all tests
+- task: DotNetCoreCLI@2
+  displayName: 'Run Unit & Functional Tests'
+  inputs:
+    command: test
+    projects: |
+      tests/Basket.UnitTests/Basket.UnitTests.csproj
+      tests/Catalog.FunctionalTests/Catalog.FunctionalTests.csproj
+      tests/Ordering.FunctionalTests/Ordering.FunctionalTests.csproj
+      tests/Ordering.UnitTests/Ordering.UnitTests.csproj
+    arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
+
+# Optional: Publish test results
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFiles: '**/TestResults/*.trx'
+    testRunTitle: 'Test Results'
+
+# Optional: Publish coverage
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: 'cobertura'
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
