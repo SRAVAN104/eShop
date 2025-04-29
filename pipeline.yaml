@@ -19,7 +19,7 @@ steps:
 - task: UseDotNet@2
   inputs:
     packageType: 'sdk'
-    version: '9.x.x'
+    version: '9.0.x'
     includePreviewVersions: true
 
 # Restore both solutions
